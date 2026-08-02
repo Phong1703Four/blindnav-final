@@ -26,8 +26,19 @@
   <link rel="stylesheet" href="css/screens/community.css">
   <link rel="stylesheet" href="css/screens/settings.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 </head>
 <body>
+
+<!-- 3D Tech Intro Overlay -->
+<div id="tech-intro" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000; z-index:99999; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:opacity 1s ease-in-out;">
+  <div id="intro-canvas-container" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+  <div style="position:relative; z-index:2; text-align:center; text-transform:uppercase; letter-spacing:8px;">
+    <h1 style="color:#fff; font-size:3rem; font-weight:800; text-shadow:0 0 20px rgba(0, 255, 204, 0.8), 0 0 40px rgba(0, 255, 204, 0.4); margin-bottom:10px;">BlindNav</h1>
+    <p style="color:#00ffcc; font-size:1.2rem; font-weight:500; text-shadow:0 0 10px rgba(0,255,204,0.5);">Luôn Bên Cạnh, Dù Cách Xa</p>
+  </div>
+  <button id="skip-intro-btn" style="position:absolute; bottom:40px; z-index:2; padding:10px 24px; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; border-radius:20px; cursor:pointer; font-family:Inter; font-size:14px; transition:all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">BỎ QUA INTRO</button>
+</div>
 
 <div id="app">
 
@@ -300,7 +311,7 @@
     </div>
 
     <!-- Demo SOS Button -->
-    <button class="sos-demo-btn" id="sos-demo-btn" data-i18n="sos.demoBtn">
+    <button class="sos-demo-btn" id="sos-demo-btn" data-i18n="sos.demoBtn" onclick="FamilyCallManager.sendReverseSOS()">
       🚨 MÔ PHỎNG SOS (Demo cho cuộc thi)
     </button>
   </main>
@@ -1062,10 +1073,16 @@ const FamilyCallManager = {
 
   // Cập nhật thông tin vật cản trên giao diện family
   _updateObstacleInfo(data) {
-    // Có thể hiển thị info vật cản trên tracking panel
+    // Hiển thị thông báo trên giao diện family
     if (data.obstacles && data.obstacles.length > 0) {
       const names = data.obstacles.map(o => `${o.name} (${o.distance})`).join(', ');
       console.log(`⚠️ Obstacles near Bố: ${names}`);
+      
+      const isDanger = data.obstacles.some(o => o.type === 'danger');
+      const toastType = isDanger ? 'danger' : 'info';
+      const prefix = isDanger ? '🚨 NGUY HIỂM:' : '⚠️ Chú ý:';
+      
+      App.showToast(`${prefix} Phát hiện vật cản gần Bố - ${names}`, toastType);
     }
   },
 
@@ -1344,5 +1361,105 @@ App.init = function() {
 };
 </script>
 
+<!-- 3D Intro Animation Logic -->
+<script>
+  (function() {
+    const introContainer = document.getElementById('tech-intro');
+    const canvasContainer = document.getElementById('intro-canvas-container');
+    const skipBtn = document.getElementById('skip-intro-btn');
+    if (!introContainer || !canvasContainer || typeof THREE === 'undefined') return;
+
+    let scene, camera, renderer, particles;
+    let animationId;
+    let isFading = false;
+
+    function init3D() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 50;
+
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      canvasContainer.appendChild(renderer.domElement);
+
+      // Create Particle Sphere
+      const geometry = new THREE.BufferGeometry();
+      const count = 3000;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      
+      const color1 = new THREE.Color(0x00ffcc);
+      const color2 = new THREE.Color(0x0066ff);
+
+      for(let i=0; i<count*3; i+=3) {
+        // Spherical distribution
+        const r = 25 + Math.random() * 5;
+        const theta = 2 * Math.PI * Math.random();
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        positions[i] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i+1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i+2] = r * Math.cos(phi);
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i] = mixedColor.r;
+        colors[i+1] = mixedColor.g;
+        colors[i+2] = mixedColor.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8
+      });
+
+      particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+
+      window.addEventListener('resize', onWindowResize, false);
+      animate();
+    }
+
+    function onWindowResize() {
+      if(!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      if(isFading) return;
+      animationId = requestAnimationFrame(animate);
+      if(particles) {
+        particles.rotation.y += 0.002;
+        particles.rotation.x += 0.001;
+      }
+      renderer.render(scene, camera);
+    }
+
+    function removeIntro() {
+      if(isFading) return;
+      isFading = true;
+      introContainer.style.opacity = '0';
+      setTimeout(() => {
+        if(animationId) cancelAnimationFrame(animationId);
+        introContainer.remove();
+      }, 1000);
+    }
+
+    // Bind skip button
+    if(skipBtn) skipBtn.addEventListener('click', removeIntro);
+
+    // Auto remove after 10 seconds
+    setTimeout(removeIntro, 10000);
+
+    // Start 3D
+    init3D();
+  })();
+</script>
 </body>
 </html>

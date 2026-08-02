@@ -157,6 +157,7 @@ const BlindNavRTC = {
       case 'sos-alert':
       case 'sos-cancel':
       case 'sos-resolved':
+      case 'reverse-sos':
         if (this.onSOSAlert) this.onSOSAlert(data);
         break;
 

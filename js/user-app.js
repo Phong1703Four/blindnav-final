@@ -70,6 +70,8 @@ const UserApp = {
       BlindNavRTC.onSOSAlert = (data) => {
         if (data.type === 'sos-resolved') {
           this.onSOSResolved();
+        } else if (data.type === 'reverse-sos') {
+          this.onReverseSOS();
         }
       };
 
@@ -662,6 +664,13 @@ const UserApp = {
     if (overlay) overlay.classList.remove('active');
     if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
     this.speak('Người thân đã xác nhận bạn an toàn.');
+  },
+
+  onReverseSOS() {
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+    if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
+    this.showAlert('🚨 CẢNH BÁO TỪ NGƯỜI THÂN!', 'danger');
+    this.speak('Cảnh báo khẩn cấp từ người thân! Hãy dừng lại và nghe máy ngay lập tức.');
   },
 
   // ═══════════════════════════════════════════
