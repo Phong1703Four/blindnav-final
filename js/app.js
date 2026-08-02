@@ -397,12 +397,10 @@ const App = {
 
     // Update Battery
     if (data.battery !== undefined) {
-      const batFill = document.getElementById('battery-fill');
-      const batVal = document.getElementById('battery-value');
-      const sidebarBat = document.getElementById('sidebar-battery');
-      if (batFill) batFill.style.width = data.battery + '%';
-      if (batVal) batVal.textContent = data.battery + '%';
-      if (sidebarBat) sidebarBat.textContent = data.battery + '%';
+      BlindNavData.glasses.status.battery = data.battery;
+      if (typeof TrackingScreen !== 'undefined' && TrackingScreen.renderStatusBar) {
+        TrackingScreen.renderStatusBar();
+      }
     }
 
     // Update Location

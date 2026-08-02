@@ -11,15 +11,14 @@ const ThemeManager = {
     if (saved) {
       this.set(saved, false);
     } else {
-      // Auto-detect system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      this.set(prefersDark ? 'dark' : 'light', false);
+      // Force dark mode as default for the new dashboard
+      this.set('dark', false);
     }
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       const saved = localStorage.getItem(this.STORAGE_KEY);
-      if (saved === 'system' || !saved) {
+      if (saved === 'system') {
         this.set(e.matches ? 'dark' : 'light', false);
       }
     });

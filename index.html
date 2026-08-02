@@ -69,185 +69,238 @@
        ═══════════════════════════════════════════ -->
   <aside class="desktop-sidebar" id="desktop-sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-brand-title">🕶️ BlindNav</div>
-      <div class="sidebar-brand-sub" data-i18n="app.slogan">Luôn bên cạnh, dù cách xa</div>
+      <div class="sidebar-brand-title">
+        <span style="display:inline-block; margin-right:8px; background:linear-gradient(135deg, #0066ff, #00ffcc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">🕶️</span> BlindNav
+      </div>
+      <div class="sidebar-brand-sub" data-i18n="app.slogan">Always by your side</div>
     </div>
     <nav class="sidebar-nav">
       <button class="sidebar-item active" data-tab="tracking" id="sidebar-tracking">
-        <span class="sidebar-item-icon">📍</span>
-        <span class="sidebar-item-label" data-i18n="nav.tracking">Theo dõi</span>
+        <span class="sidebar-item-icon" style="color:var(--color-primary-light);">🎯</span>
+        <span class="sidebar-item-label" data-i18n="nav.tracking">Tracking</span>
       </button>
       <button class="sidebar-item" data-tab="routes" id="sidebar-routes">
-        <span class="sidebar-item-icon">🗺️</span>
-        <span class="sidebar-item-label" data-i18n="nav.routes">Lộ trình</span>
+        <span class="sidebar-item-icon" style="color:var(--color-primary-light);">🗺️</span>
+        <span class="sidebar-item-label" data-i18n="nav.routes">Routes</span>
       </button>
       <button class="sidebar-item sidebar-sos" data-tab="sos" id="sidebar-sos">
         <span class="sidebar-item-icon">🚨</span>
-        <span class="sidebar-item-label" data-i18n="nav.sosCenter">Trung tâm SOS</span>
+        <span class="sidebar-item-label" data-i18n="nav.sosCenter">SOS Center</span>
       </button>
       <button class="sidebar-item" data-tab="stats" id="sidebar-stats">
-        <span class="sidebar-item-icon">📊</span>
-        <span class="sidebar-item-label" data-i18n="nav.stats">Thống kê</span>
+        <span class="sidebar-item-icon" style="color:#f5b041;">📊</span>
+        <span class="sidebar-item-label" data-i18n="nav.stats">Statistics</span>
       </button>
       <button class="sidebar-item" data-tab="community" id="sidebar-community">
-        <span class="sidebar-item-icon">👥</span>
-        <span class="sidebar-item-label" data-i18n="nav.community">Cộng đồng</span>
+        <span class="sidebar-item-icon" style="color:#af7ac5;">👥</span>
+        <span class="sidebar-item-label" data-i18n="nav.community">Community</span>
       </button>
       <button class="sidebar-item" data-tab="settings" id="sidebar-settings">
-        <span class="sidebar-item-icon">⚙️</span>
-        <span class="sidebar-item-label" data-i18n="nav.settings">Cài đặt</span>
+        <span class="sidebar-item-icon" style="color:#aeb6bf;">⚙️</span>
+        <span class="sidebar-item-label" data-i18n="nav.settings">Settings</span>
       </button>
     </nav>
-    <div class="sidebar-status">
-      <div class="sidebar-status-row">🔋 <span id="sidebar-battery">78%</span></div>
-      <div class="sidebar-status-row">📶 <span id="sidebar-signal" data-i18n="sidebar.signalGood">Tốt</span></div>
-    </div>
-    <div class="sidebar-version" data-i18n="app.version">Samsung Solve for Tomorrow 2026 · v1.0.0</div>
-  </aside>
-
-  <!-- ═══════════════════════════════════════════
-       MAIN CONTENT AREA
-       ═══════════════════════════════════════════ -->
-  <div class="desktop-main">
-
-  <!-- ═══════════════════════════════════════════
-       HEADER — Status bar
-       ═══════════════════════════════════════════ -->
-  <header class="app-header" id="app-header">
-    <div class="header-left">
-      <div class="header-status">
-        <div class="status-dot active" id="header-status-dot"></div>
-        <span class="header-name" id="header-status-text" data-i18n="header.active">Bố đang hoạt động</span>
-      </div>
-    </div>
-    <div class="header-actions">
-      <div class="hw-indicator demo" id="hw-indicator" onclick="HardwareBridge.showConnectionModal()" title="Trạng thái kết nối phần cứng" data-i18n-title="header.hwStatus">
-        <div class="hw-dot"></div>
-        <span id="hw-indicator-text" data-i18n="header.demo">Demo</span>
-      </div>
-      <button class="header-btn" id="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Chế độ tối">🌙</button>
-      <button class="header-btn" id="header-call-btn" title="Gọi điện" data-i18n-title="header.call">📞</button>
-      <button class="header-btn" id="header-menu-btn" title="Menu" data-i18n-title="header.menu">⋯</button>
-    </div>
-  </header>
-
-  <!-- ═══════════════════════════════════════════
-       SCREEN 1 — Theo dõi GPS
-       ═══════════════════════════════════════════ -->
-  <main class="screen active" id="screen-tracking">
-    <!-- Map -->
-    <div class="tracking-map-container">
-      <div id="tracking-map"></div>
-      <button class="map-center-btn" id="map-center-btn" title="Căn giữa vị trí" data-i18n-title="tracking.centerMap">🎯</button>
-      <button class="community-fab" id="community-fab-btn" title="Cộng đồng" data-i18n-title="tracking.community">👥</button>
-    </div>
-
-    <!-- Tracking Info Panel (for desktop 2-column) -->
-    <div class="tracking-info-panel">
-
-    <!-- Glasses Status Bar -->
-    <div class="glasses-status-bar">
-      <div class="battery-indicator normal" id="battery-indicator">
-        <div class="battery-bar">
-          <div class="battery-fill" id="battery-fill" style="width: 78%"></div>
+    
+    <div class="sidebar-profile-card">
+      <div class="profile-header">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-info">
+          <div class="profile-name">Dad</div>
+          <div class="profile-status"><span class="status-dot-small active"></span> Active</div>
         </div>
-        <span>🔋 <span id="battery-value">78%</span></span>
+        <button class="profile-expand">⛶</button>
       </div>
-      <div class="signal-indicator good" id="signal-indicator">
-        <div class="signal-bars">
-          <div class="signal-bar active"></div>
-          <div class="signal-bar active"></div>
-          <div class="signal-bar active"></div>
-          <div class="signal-bar active"></div>
+      <div class="profile-battery">
+        <div class="battery-indicator normal">
+          <div class="battery-bar"><div class="battery-fill" id="sidebar-battery-fill" style="width: 78%"></div></div>
+          <span><span id="sidebar-battery-text">78%</span></span>
         </div>
-        <span>📶 <span id="signal-text" data-i18n="sidebar.signalGood">Tốt</span></span>
+        <div class="profile-last-update">Last update: 2 min ago</div>
       </div>
     </div>
 
-    <!-- Connection Lost Banner (hidden by default) -->
-    <div class="connection-lost-banner" id="connection-lost-banner">
-      <span class="connection-lost-text" id="connection-lost-text" data-i18n="tracking.connectionLost">📡 Mất tín hiệu kính 3 phút trước</span>
-      <button class="connection-lost-btn" id="connection-lost-contact-btn" data-i18n="tracking.contactNow">Liên hệ ngay</button>
+    <div class="sidebar-premium-card">
+      <div class="premium-icon">🚀</div>
+      <div class="premium-content">
+        <div class="premium-title">BlindNav Premium</div>
+        <div class="premium-desc">Unlock all features</div>
+      </div>
+      <button class="premium-btn">Upgrade Now</button>
     </div>
 
-    <!-- Location Info -->
-    <div class="location-info">
-      <div class="location-address">
-        <span>📍</span>
-        <span id="current-address">Hàng Bông, Hoàn Kiếm, Hà Nội</span>
-      </div>
-      <div class="location-details">
-        <span class="location-detail" id="current-speed">🚶 1.2 km/h · Hướng: Bắc</span>
-      </div>
-      <div class="location-details" style="margin-top: 4px;">
-        <span class="location-detail" id="time-outside">🕐 Ra khỏi nhà: 45 phút</span>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- ═══ LIVE CAMERA FEED ═══ -->
-    <div class="live-feed-section" id="live-feed-section">
-      <div class="live-feed-header">
-        <div class="live-feed-title">
-          <span class="live-dot"></span>
-          <span>📹 Camera trực tiếp của Bố</span>
+    <div class="sidebar-theme-toggles">
+      <button class="theme-toggle-btn active" onclick="ThemeManager.setTheme('dark')" title="Chế độ tối">🌙</button>
+      <button class="theme-toggle-btn" onclick="ThemeManager.setTheme('light')" title="Chế độ sáng">☀️</button>  <!-- ═══════════════════════════════════════════
+       SCREEN 1 — Bảng Điều Khiển (Dashboard)
+       ═══════════════════════════════════════════ -->
+  <main class="dashboard-grid active" id="screen-tracking">
+    
+    <!-- CỘT GIỮA: BẢN ĐỒ -->
+    <div class="dashboard-map-panel">
+      <!-- Top Bar của Bản Đồ -->
+      <div class="map-top-bar">
+        <div class="map-status-pill" id="map-status-pill">
+          <span class="status-dot active" id="header-status-dot"></span> 
+          <span id="header-status-text">Dad is active</span>
         </div>
-        <button class="live-feed-expand-btn" id="live-feed-expand-btn" title="Mở rộng">⛶</button>
-      </div>
-      <div class="live-feed-container" id="live-feed-container">
-        <video id="remote-camera-feed" autoplay playsinline></video>
-        <div class="live-feed-placeholder" id="live-feed-placeholder">
-          <div style="font-size:2.5rem;margin-bottom:8px;">📷</div>
-          <div style="font-size:0.8125rem;color:var(--color-text-secondary);">Camera của Bố sẽ hiển thị tại đây</div>
-          <button class="btn btn-primary" style="margin-top:12px;padding:8px 20px;font-size:0.8125rem;" id="request-camera-btn" onclick="FamilyCallManager.requestCameraFeed()">
-            📡 Kết nối camera
+        <div class="map-header-actions">
+          <div class="hw-indicator demo" id="hw-indicator" onclick="HardwareBridge.showConnectionModal()">
+            <div class="hw-dot"></div> Demo
+          </div>
+          <span class="top-battery" id="top-battery-text">🔋 78%</span>
+          <span class="top-signal" id="top-signal-text">📶 Good</span>
+          <button class="icon-btn" style="position:relative;">
+            🔔<span class="badge">3</span>
           </button>
-        </div>
-        <div class="live-feed-overlay">
-          <span class="live-feed-badge">LIVE</span>
-          <span class="live-feed-time" id="live-feed-time">--:--</span>
+          <button class="icon-btn" onclick="FamilyCallManager.startCall()">📞</button>
+          <button class="icon-btn">⋯</button>
         </div>
       </div>
-      <div class="live-feed-actions">
-        <button class="btn btn-primary" style="flex:1;height:40px;font-size:0.875rem;" id="family-call-btn" onclick="FamilyCallManager.startCall()">
-          📞 Gọi video cho Bố
-        </button>
-        <button class="btn btn-outline" style="flex:1;height:40px;font-size:0.875rem;" id="family-msg-btn" onclick="FamilyCallManager.showSendMessage()">
-          💬 Gửi tin nhắn
-        </button>
+
+      <!-- Khung hiển thị bản đồ -->
+      <div class="map-container-inner">
+        <!-- Toolbar nổi trên bản đồ -->
+        <div class="map-toolbar-top">
+          <div class="map-layers">
+            <button class="layer-btn active">2D</button>
+            <button class="layer-btn">3D</button>
+            <button class="layer-btn">Satellite</button>
+            <button class="layer-btn">Terrain</button>
+          </div>
+          <button class="live-indicator-btn"><span class="live-dot"></span> Live</button>
+        </div>
+
+        <!-- DIV chứa Leaflet Map thực sự -->
+        <div id="tracking-map"></div>
+        
+        <!-- Các nút zoom / định vị nổi -->
+        <div class="map-toolbar-side">
+          <button class="map-btn" id="map-center-btn" title="Căn giữa">🎯</button>
+          <button class="map-btn">+</button>
+          <button class="map-btn">-</button>
+          <button class="map-btn">❖</button>
+        </div>
+
+        <!-- Các Widget nổi dưới đáy bản đồ -->
+        <div class="map-bottom-widgets">
+          <div class="map-widget active">
+            <div class="widget-icon" style="background:#2979FF">📍</div>
+            <div class="widget-info">
+              <div class="widget-title">Live Tracking</div>
+              <div class="widget-sub">Real-time location</div>
+            </div>
+          </div>
+          <div class="map-widget">
+            <div class="widget-icon">🛡️</div>
+            <div class="widget-info">
+              <div class="widget-title">Safe Zone</div>
+              <div class="widget-sub">500m radius</div>
+            </div>
+          </div>
+          <div class="map-widget">
+            <div class="widget-icon">🔄</div>
+            <div class="widget-info">
+              <div class="widget-title">Route History</div>
+              <div class="widget-sub">Today, 12:30</div>
+            </div>
+          </div>
+          <div class="map-widget" style="background:rgba(255,107,107,0.05); border-color:rgba(255,107,107,0.2);">
+            <div class="widget-icon" style="background:rgba(255,107,107,0.1); color:#FF6B6B">⚠️</div>
+            <div class="widget-info">
+              <div class="widget-title" style="color:#FF6B6B;">Alerts</div>
+              <div class="widget-sub">No new alerts</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="divider"></div>
+    <!-- CỘT PHẢI: BẢNG THÔNG TIN -->
+    <div class="dashboard-info-panel">
+      <!-- Thẻ địa chỉ -->
+      <div class="info-address-card">
+        <div class="address-icon">📍</div>
+        <div class="address-text">
+          <div id="current-address">Hàng Bông, Hoàn Kiếm, Hà Nội</div>
+          <div class="address-sub" id="current-speed">1.2 km/h · Time outside: 45m</div>
+        </div>
+        <button class="icon-btn-small">⋯</button>
+      </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <div class="quick-action-item" id="qa-active-route">
-        <div class="quick-action-left">
-          <div class="quick-action-icon blue">🗺️</div>
-          <span class="quick-action-text" data-i18n="tracking.viewRoute">Xem lộ trình đang dùng</span>
+      <!-- Thẻ Live Camera -->
+      <div class="info-camera-card">
+        <div class="camera-header">
+          <div class="camera-title"><span class="icon">📹</span> Live camera from Dad</div>
+          <button class="icon-btn-small" id="live-feed-expand-btn">⛶</button>
         </div>
-        <span class="quick-action-arrow">›</span>
+        
+        <div class="camera-feed-box" id="live-feed-container">
+          <span class="live-badge">🔴 LIVE</span>
+          <span class="res-badge">1080p · 30fps</span>
+          <video id="remote-camera-feed" autoplay playsinline></video>
+          
+          <div class="camera-placeholder" id="live-feed-placeholder">
+            <div style="font-size:2.5rem; margin-bottom:10px;">📷</div>
+            <div style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:15px;">Camera feed will appear here</div>
+            <button class="btn-action primary" style="width:auto; padding:8px 20px;" id="request-camera-btn" onclick="FamilyCallManager.requestCameraFeed()">Connect Camera</button>
+          </div>
+          
+          <div class="live-feed-overlay" style="display:none;">
+            <span class="live-feed-time" id="live-feed-time">--:--</span>
+          </div>
+        </div>
+
+        <div class="camera-actions">
+          <button class="btn-action primary" onclick="FamilyCallManager.startCall()">📞 Call Dad</button>
+          <button class="btn-action secondary" onclick="FamilyCallManager.showSendMessage()">💬 Send message</button>
+        </div>
       </div>
-      <div class="quick-action-item" id="qa-history">
-        <div class="quick-action-left">
-          <div class="quick-action-icon green">📋</div>
-          <span class="quick-action-text" data-i18n="tracking.todayHistory">Lịch sử hôm nay</span>
+
+      <!-- Thẻ Lộ trình & Lịch sử -->
+      <div class="info-list-card">
+        <div class="list-item">
+          <div class="list-icon blue">🗺️</div>
+          <div class="list-text">
+            <div class="list-title">Active route</div>
+            <div class="list-sub">View and navigate route</div>
+          </div>
+          <div class="list-arrow">›</div>
         </div>
-        <span class="quick-action-arrow">›</span>
+        <div class="list-item" style="border-bottom:none;">
+          <div class="list-icon green">🕒</div>
+          <div class="list-text">
+            <div class="list-title">Today's history</div>
+            <div class="list-sub">See activity timeline</div>
+          </div>
+          <div class="list-arrow">›</div>
+        </div>
       </div>
-      <div class="quick-action-item" id="qa-geofence">
-        <div class="quick-action-left">
-          <div class="quick-action-icon orange">🛡️</div>
-          <span class="quick-action-text" data-i18n="tracking.setGeofence">Đặt vùng an toàn</span>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions-section">
+        <h3 class="section-title">Quick actions</h3>
+        <div class="quick-grid">
+          <div class="quick-btn">
+            <div class="q-icon" style="background:rgba(96,165,250,0.15); color:#60A5FA;">🔗</div>
+            <span>Share location</span>
+          </div>
+          <div class="quick-btn">
+            <div class="q-icon" style="background:rgba(74,222,128,0.15); color:#4ADE80;">📍</div>
+            <span>Navigate to</span>
+          </div>
+          <div class="quick-btn" onclick="App.triggerSOS()">
+            <div class="q-icon" style="background:rgba(255,107,107,0.15); color:#FF6B6B;">🚨</div>
+            <span>Send SOS</span>
+          </div>
+          <div class="quick-btn" onclick="FamilyCallManager.startCall()">
+            <div class="q-icon" style="background:rgba(41,121,255,0.15); color:#2979FF;">📞</div>
+            <span>Voice call</span>
+          </div>
         </div>
-        <span class="quick-action-arrow">›</span>
+        <div class="update-text"><span class="status-dot-small active"></span> Last update: 2 minutes ago</div>
       </div>
     </div>
 
-    </div><!-- /tracking-info-panel -->
-  </main>
 
   <!-- ═══════════════════════════════════════════
        SCREEN 2 — Lộ trình quen thuộc

@@ -93,22 +93,30 @@ const TrackingScreen = {
   renderStatusBar() {
     const status = BlindNavData.glasses.status;
     const battery = Math.round(status.battery);
-    const batteryEl = document.getElementById('battery-value');
-    const batteryBar = document.getElementById('battery-fill');
-    const batteryContainer = document.getElementById('battery-indicator');
-    if (batteryEl) batteryEl.textContent = `${battery}%`;
-    if (batteryBar) batteryBar.style.width = `${battery}%`;
-    if (batteryContainer) batteryContainer.className = `battery-indicator ${battery < 20 ? 'low' : 'normal'}`;
+    
+    // Update sidebar battery
+    const sidebarBatteryText = document.getElementById('sidebar-battery-text');
+    const sidebarBatteryFill = document.getElementById('sidebar-battery-fill');
+    if (sidebarBatteryText) sidebarBatteryText.textContent = `${battery}%`;
+    if (sidebarBatteryFill) {
+      sidebarBatteryFill.style.width = `${battery}%`;
+      sidebarBatteryFill.style.backgroundColor = battery < 20 ? '#FF6B6B' : '#4ADE80';
+    }
 
-    const signalEl = document.getElementById('signal-text');
-    const signalContainer = document.getElementById('signal-indicator');
-    if (signalEl && signalContainer) {
+    // Update top bar battery
+    const topBatteryText = document.getElementById('top-battery-text');
+    if (topBatteryText) {
+      topBatteryText.textContent = `🔋 ${battery}%`;
+      topBatteryText.style.color = battery < 20 ? '#FF6B6B' : '#4ADE80';
+    }
+
+    // Update top bar signal
+    const topSignalText = document.getElementById('top-signal-text');
+    if (topSignalText) {
       const signalMap = { good: 'tracking.signalGood', medium: 'tracking.signalMedium', weak: 'tracking.signalWeak', lost: 'tracking.signalLost' };
-      signalEl.textContent = I18n.t(signalMap[status.signal] || 'tracking.signalGood');
-      signalContainer.className = `signal-indicator ${status.signal}`;
-      const bars = signalContainer.querySelectorAll('.signal-bar');
-      const activeBars = { good: 4, medium: 3, weak: 2, lost: 1 };
-      bars.forEach((bar, i) => { bar.classList.toggle('active', i < (activeBars[status.signal] || 0)); });
+      const sigColorMap = { good: '#4ADE80', medium: '#FBBF24', weak: '#FF6B6B', lost: '#FF4B4B' };
+      topSignalText.textContent = `📶 ${I18n.t(signalMap[status.signal] || 'tracking.signalGood')}`;
+      topSignalText.style.color = sigColorMap[status.signal] || '#4ADE80';
     }
   },
 

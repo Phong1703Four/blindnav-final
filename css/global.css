@@ -695,3 +695,91 @@ ul, ol {
 .px-4 { padding-left: var(--space-4); padding-right: var(--space-4); }
 .px-5 { padding-left: var(--space-5); padding-right: var(--space-5); }
 .py-4 { padding-top: var(--space-4); padding-bottom: var(--space-4); }
+
+/* ── NEW SIDEBAR COMPONENTS ── */
+.sidebar-profile-card {
+  margin: 16px;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+}
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0066ff, #00ffcc);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: white;
+}
+.profile-info { flex: 1; }
+.profile-name { font-weight: 600; font-size: 1rem; color: var(--color-text-primary); }
+.profile-status { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #4ADE80; margin-top: 2px; }
+.profile-expand { color: var(--color-text-secondary); background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+.profile-battery {
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 10px;
+}
+.profile-last-update { font-size: 0.7rem; color: var(--color-text-tertiary); margin-top: 6px; text-align: center; }
+
+.sidebar-premium-card {
+  margin: 0 16px 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(255, 171, 0, 0.1), rgba(255, 107, 107, 0.1));
+  border: 1px solid rgba(255, 171, 0, 0.2);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.premium-icon { font-size: 1.5rem; }
+.premium-title { font-weight: bold; color: #FFD54F; font-size: 0.95rem; }
+.premium-desc { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 2px; }
+.premium-btn {
+  background: linear-gradient(90deg, #FFAB00, #FF6B6B);
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.sidebar-theme-toggles {
+  display: flex;
+  gap: 8px;
+  margin: 0 16px 24px;
+  padding: 4px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.theme-toggle-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.theme-toggle-btn.active {
+  background: rgba(255,255,255,0.1);
+  color: var(--color-text-primary);
+}
