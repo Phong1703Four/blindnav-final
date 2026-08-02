@@ -18,6 +18,43 @@ const App = {
     this.startGlassesSimulation();
   },
 
+  async connectPairingCode() {
+    const code = document.getElementById('family-pairing-input').value.trim();
+    if (code.length === 6 && !isNaN(code)) {
+      document.getElementById('family-pairing-error').style.display = 'none';
+      
+      try {
+        // Try Firebase (optional — works without config)
+        if (typeof FirebaseConfig !== 'undefined') {
+          const fbOk = FirebaseConfig.init();
+          if (fbOk) {
+            await FirebaseConfig.pairDevice(code, 'family');
+            console.log('✅ Firebase paired as family');
+          }
+        }
+        
+        // Always init PeerJS (primary channel)
+        if (typeof BlindNavRTC !== 'undefined') {
+          BlindNavRTC.initAsFamily(code);
+        }
+
+        // Setup FamilyCallManager callbacks AFTER BlindNavRTC is initialized
+        if (typeof FamilyCallManager !== 'undefined') {
+          FamilyCallManager.setupCallbacks();
+        }
+        
+        document.getElementById('family-pairing-overlay').style.display = 'none';
+        this.showToast(I18n.t('app.statusActive').replace('{name}', 'Bố'), 'success');
+      } catch (err) {
+        document.getElementById('family-pairing-error').innerText = err.message || 'Lỗi kết nối.';
+        document.getElementById('family-pairing-error').style.display = 'block';
+      }
+    } else {
+      document.getElementById('family-pairing-error').innerText = 'Mã không hợp lệ. Vui lòng kiểm tra lại.';
+      document.getElementById('family-pairing-error').style.display = 'block';
+    }
+  },
+
   // ── Tab Navigation ──
   setupNavigation() {
     document.querySelectorAll('.tab-item').forEach(tab => {
@@ -43,6 +80,12 @@ const App = {
     if (communityScreen && tabName !== 'community') {
       communityScreen.classList.remove('active');
     }
+
+    // Remove active from all screens first
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active');
+    });
+
     // Sync mobile tab bar
     document.querySelectorAll('.tab-item').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -50,16 +93,20 @@ const App = {
     // Sync desktop sidebar
     document.querySelectorAll('.sidebar-item').forEach(item => {
       item.classList.toggle('active', item.dataset.tab === tabName);
-      // Keep SOS special styling when not active
       if (item.dataset.tab === 'sos' && tabName !== 'sos') {
         item.classList.add('sidebar-sos');
       }
     });
-    document.querySelectorAll('.screen').forEach(screen => {
-      screen.classList.remove('active');
-    });
+
     const targetScreen = document.getElementById(`screen-${tabName}`);
-    if (targetScreen) targetScreen.classList.add('active');
+    if (targetScreen) {
+      targetScreen.classList.add('active');
+      // Smooth animation
+      targetScreen.style.animation = 'none';
+      targetScreen.offsetHeight; // trigger reflow
+      targetScreen.style.animation = 'screenFadeIn 0.4s ease-out';
+    }
+
     this.currentTab = tabName;
     this.onScreenEnter(tabName);
   },
@@ -93,7 +140,6 @@ const App = {
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        // Invalidate maps on resize
         if (this.currentTab === 'tracking' && typeof TrackingScreen !== 'undefined' && TrackingScreen.map) {
           TrackingScreen.map.invalidateSize();
         }
@@ -158,7 +204,6 @@ const App = {
   },
 
   simulateCall(name) {
-    // 🔊 Play ringtone
     if (typeof AudioManager !== 'undefined') AudioManager.playRingtone();
 
     this.showModal('', `
@@ -176,7 +221,6 @@ const App = {
   },
 
   endCall() {
-    // 🔊 Stop ringtone & play end sound
     if (typeof AudioManager !== 'undefined') {
       AudioManager.stopRingtone();
       AudioManager.playCallEnd();
@@ -199,7 +243,23 @@ const App = {
   doSendMessage() {
     const msg = document.getElementById('voice-msg-input')?.value;
     if (msg && msg.trim()) {
-      // 🔊 Speak the message via TTS
+      // Send via PeerJS to blind user
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.send({
+          type: 'text-message',
+          sender: 'Con Lan',
+          text: msg.trim()
+        });
+      }
+      // Also send via Firebase if available
+      if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+        FirebaseConfig.updateState('text_messages/' + Date.now(), {
+          sender: 'family',
+          text: msg.trim(),
+          timestamp: Date.now()
+        });
+      }
+      // Speak locally
       if (typeof AudioManager !== 'undefined') {
         AudioManager.speak(msg, I18n.currentLang);
       }
@@ -215,7 +275,6 @@ const App = {
     const loc = BlindNavData.glasses.location;
     const name = BlindNavData.glasses.pairedUser;
     const url = `https://maps.google.com/?q=${loc.lat},${loc.lng}`;
-    // Try to use native share API
     if (navigator.share) {
       navigator.share({ title: I18n.t('app.locationOf', { name }), text: I18n.t('app.isAt', { name }) + loc.address, url: url });
     } else {
@@ -235,8 +294,7 @@ const App = {
 
   // ── Glasses Simulation ──
   startGlassesSimulation() {
-    // Đã gỡ bỏ mô phỏng GPS chạy ngẫu nhiên.
-    // Chờ nhận toạ độ thật từ điện thoại người mù qua WebRTC.
+    // Waiting for real GPS data from blind user via PeerJS/Firebase
   },
 
   // ── SOS Alert ──
@@ -245,7 +303,6 @@ const App = {
     if (overlay) {
       overlay.classList.add('active');
       document.body.style.overflow = 'hidden';
-      // 🔊 Play SOS alert sound
       if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
       if (typeof SOSScreen !== 'undefined') SOSScreen.startSOSSequence();
     }
@@ -257,7 +314,6 @@ const App = {
       overlay.classList.remove('active');
       document.body.style.overflow = '';
     }
-    // 🔊 Stop SOS alert
     if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
   },
 
@@ -300,7 +356,6 @@ const App = {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
 
-    // 🔊 Play notification sound
     if (typeof AudioManager !== 'undefined') {
       AudioManager.playNotification(type === 'success' ? 'success' : type === 'danger' ? 'danger' : 'info');
     }
@@ -322,6 +377,53 @@ const App = {
       toast.style.transition = 'opacity 0.3s';
       setTimeout(() => toast.remove(), 300);
     }, 2500);
+  },
+
+  // ═══════════════════════════════════════
+  // FIREBASE REALTIME SYNC
+  // ═══════════════════════════════════════
+  onFirebaseStateUpdate(data) {
+    if (!data) return;
+
+    // Update connection status
+    const isOnline = data.connection_status === 'online';
+    const statusText = document.getElementById('header-status-text');
+    const statusDot = document.getElementById('header-status-dot');
+    if (statusText) statusText.textContent = isOnline ? I18n.t('app.statusActive').replace('{name}', 'Bố') : I18n.t('app.statusLost').replace('{name}', 'Bố');
+    if (statusDot) {
+      statusDot.className = 'status-dot';
+      if (isOnline) statusDot.classList.add('active');
+    }
+
+    // Update Battery
+    if (data.battery !== undefined) {
+      const batFill = document.getElementById('battery-fill');
+      const batVal = document.getElementById('battery-value');
+      const sidebarBat = document.getElementById('sidebar-battery');
+      if (batFill) batFill.style.width = data.battery + '%';
+      if (batVal) batVal.textContent = data.battery + '%';
+      if (sidebarBat) sidebarBat.textContent = data.battery + '%';
+    }
+
+    // Update Location
+    if (data.location) {
+      if (typeof TrackingScreen !== 'undefined' && TrackingScreen.map) {
+        TrackingScreen.updateGlassesLocation(data.location.lat, data.location.lng, data.location.heading || 0);
+      }
+      const addressEl = document.getElementById('current-address');
+      const speedEl = document.getElementById('current-speed');
+      if (addressEl) addressEl.textContent = data.location.address || `${data.location.lat}, ${data.location.lng}`;
+      if (speedEl) speedEl.textContent = `🚶 ${data.location.speed || 0} km/h · Hướng: ${data.location.heading || 0}°`;
+    }
+
+    // Update SOS state
+    if (data.sos_state) {
+      if (data.sos_state === 'active') {
+        this.triggerSOS();
+      } else if (data.sos_state === 'idle' || data.sos_state === 'resolved') {
+        this.dismissSOS();
+      }
+    }
   }
 };
 

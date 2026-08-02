@@ -40,6 +40,28 @@
   <button id="skip-intro-btn" style="position:absolute; bottom:40px; z-index:2; padding:10px 24px; background:transparent; border:1px solid rgba(255,255,255,0.3); color:#fff; border-radius:20px; cursor:pointer; font-family:Inter; font-size:14px; transition:all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">BỎ QUA INTRO</button>
 </div>
 
+<!-- Futuristic Family Pairing Overlay -->
+<div id="family-pairing-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%); z-index:99990; display:flex; flex-direction:column; justify-content:center; align-items:center; padding: 20px; overflow: hidden;">
+  <!-- Animated background elements -->
+  <div style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,255,204,0.1) 0%, transparent 70%); top: -200px; left: -200px; border-radius: 50%; filter: blur(50px); animation: float-up 10s infinite alternate;"></div>
+  <div style="position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,102,255,0.1) 0%, transparent 70%); bottom: -150px; right: -150px; border-radius: 50%; filter: blur(40px); animation: float-up 12s infinite alternate-reverse;"></div>
+
+  <!-- Glassmorphism Card -->
+  <div style="background: rgba(20, 20, 35, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 50px 40px; border-radius: 30px; box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); max-width: 420px; width: 100%; text-align: center; position: relative; z-index: 2; animation: slide-in 0.8s cubic-bezier(0.16, 1, 0.3, 1);">
+    
+    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #00ffcc, #0066ff); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 25px; box-shadow: 0 10px 25px rgba(0,255,204,0.3); animation: glow-pulse 3s infinite alternate;">🔗</div>
+    
+    <h2 style="margin-bottom: 12px; font-weight: 700; font-size: 1.8rem; color: #ffffff; letter-spacing: -0.5px;">Kết nối Kính BlindNav</h2>
+    <p style="color: rgba(255,255,255,0.6); margin-bottom: 35px; font-size: 0.95rem; line-height: 1.5;">Hãy nhập mã 6 số được đọc từ kính của người mù để thiết lập liên kết an toàn.</p>
+    
+    <input type="text" id="family-pairing-input" placeholder="------" maxlength="6" style="width: 100%; font-size: 2.5rem; text-align: center; letter-spacing: 12px; padding: 18px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #00ffcc; font-family: monospace; font-weight: 700; margin-bottom: 25px; transition: all 0.3s; text-transform: uppercase;" onfocus="this.style.borderColor='#00ffcc'; this.style.boxShadow='0 0 15px rgba(0,255,204,0.2)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow='none';">
+    
+    <button onclick="App.connectPairingCode()" style="width: 100%; padding: 18px; font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, #0066ff, #00ffcc); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 8px 20px rgba(0,102,255,0.4); text-transform: uppercase; letter-spacing: 1px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 25px rgba(0,102,255,0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 20px rgba(0,102,255,0.4)';">Khởi tạo Liên kết</button>
+    
+    <div id="family-pairing-error" style="color: #ff3366; margin-top: 20px; font-weight: 600; font-size: 0.9rem; padding: 10px; background: rgba(255,51,102,0.1); border-radius: 10px; display: none; border: 1px solid rgba(255,51,102,0.3);">Mã không hợp lệ. Vui lòng kiểm tra lại.</div>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- ═══════════════════════════════════════════
@@ -493,8 +515,8 @@
             <span class="settings-row-icon">🌐</span>
             <span class="settings-row-label" data-i18n="settings.languageLabel">Ngôn ngữ</span>
           </div>
-          <div class="settings-row-value">
-            <span id="language-value">🇻🇳 Tiếng Việt</span> <span class="settings-row-arrow">›</span>
+          <div class="settings-row-value" id="language-selector-container">
+            <!-- Language selector will be injected here by i18n.js -->
           </div>
         </div>
       </div>
@@ -981,11 +1003,11 @@
 <script src="js/screens/settings.js"></script>
 <script src="js/app.js"></script>
 
-<!-- Family Call Manager (BroadcastChannel + WebRTC) -->
+<!-- Family Call Manager (PeerJS + Firebase) -->
 <script>
 /* ============================================
    Family Call Manager
-   Liên kết thật giữa 2 tab qua BroadcastChannel
+   Liên kết thật giữa 2 thiết bị qua PeerJS
    ============================================ */
 const FamilyCallManager = {
   isMuted: false,
@@ -994,38 +1016,351 @@ const FamilyCallManager = {
   feedSeconds: 0,
 
   init() {
-    if (typeof BlindNavRTC !== 'undefined') {
-      BlindNavRTC.init('family');
+    // Only setup expand button - callbacks are setup after pairing
+    const expandBtn = document.getElementById('live-feed-expand-btn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => this.toggleExpandFeed());
+    }
+  },
 
-      // Khi có cuộc gọi đến (user gọi cho family)
-      BlindNavRTC.onCallStateChange = (state) => this.onCallStateChange(state);
-      BlindNavRTC.onCallTimer = (time) => this.updateTimer(time);
-      BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
+  /**
+   * Called from App.connectPairingCode() AFTER BlindNavRTC.initAsFamily(code)
+   * This ensures BlindNavRTC is properly initialized before setting callbacks
+   */
+  setupCallbacks() {
+    if (typeof BlindNavRTC === 'undefined') return;
 
-      // Nhận camera feed từ user
-      BlindNavRTC.onCameraFeed = (stream) => this.onCameraFeed(stream);
+    // Call state callbacks
+    BlindNavRTC.onCallStateChange = (state) => this.onCallStateChange(state);
+    BlindNavRTC.onCallTimer = (time) => this.updateTimer(time);
+    BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
 
-      // Nhận tin nhắn từ user (thoại + text + obstacle + location)
-      BlindNavRTC.onMessage = (data) => {
-        switch (data.type) {
-          case 'voice-message':
-            console.log('🎤 Voice message received from Bố');
-            App.showToast(`🎤 Bố vừa gửi tin nhắn thoại (${data.duration}s)`, 'info');
-            if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
-            // Phát audio tin nhắn thoại
-            if (data.audioData) {
-              setTimeout(() => {
+    // Camera feed from blind user
+    BlindNavRTC.onCameraFeed = (stream) => this.onCameraFeed(stream);
+
+    // Data connection established callback
+    BlindNavRTC.onDataConnected = () => {
+      console.log('✅ Connected to blind user!');
+      App.showToast('✅ Đã kết nối với Bố!', 'success');
+      // Request camera feed when connected
+      setTimeout(() => {
+        BlindNavRTC.send({ type: 'request-camera' });
+        console.log('📹 Requested camera feed from user');
+      }, 2000);
+    };
+
+    // Messages from blind user
+    BlindNavRTC.onMessage = (data) => {
+      switch (data.type) {
+        case 'voice-message':
+          console.log('🎤 Voice message received from Bố');
+          App.showToast(`🎤 Bố vừa gửi tin nhắn thoại (${data.duration}s)`, 'info');
+          if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
+          if (data.audioData) {
+            setTimeout(() => {
+              if (typeof AudioManager !== 'undefined') {
+                AudioManager.playBase64Audio(data.audioData);
+              } else {
                 const audio = new Audio(data.audioData);
                 audio.volume = 1.0;
                 audio.play().catch(e => console.warn('Voice playback failed:', e));
-              }, 500);
-            }
-            break;
-          
-          case 'text-message':
-            // Tin nhắn text từ Bố (nếu Bố gửi ngược lại)
-            console.log('📨 Text message from Bố:', data.text);
-            App.showToast(`💬 Bố: ${data.text}`, 'info');
+              }
+            }, 500);
+          }
+          break;
+        
+        case 'text-message':
+          console.log('📨 Text message from Bố:', data.text);
+          App.showToast(`💬 Bố: ${data.text}`, 'info');
+          break;
+
+        case 'obstacle-update':
+          this._updateObstacleInfo(data);
+          break;
+        
+        case 'location-update':
+          this._updateLocationInfo(data);
+          break;
+      }
+    };
+
+    // SOS from blind user
+    BlindNavRTC.onSOSAlert = (data) => {
+      if (data.type === 'sos-alert') {
+        console.log('🚨 SOS Alert from Bố!');
+        App.showToast('🚨 BỐ VỪA BẤM SOS! Kiểm tra ngay!', 'danger');
+        if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
+        if (typeof App !== 'undefined') App.triggerSOS();
+      }
+      if (data.type === 'sos-cancel') {
+        console.log('✅ SOS Cancelled by Bố');
+        App.showToast('✅ Bố đã hủy SOS — An toàn', 'success');
+        if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
+        if (typeof App !== 'undefined') App.dismissSOS();
+      }
+    };
+
+    // Request camera
+    BlindNavRTC.onRequestCamera = () => {
+      console.log('📹 Blind user requesting camera — ignored on family side');
+    };
+
+    console.log('✅ FamilyCallManager callbacks registered');
+  },
+
+  // Obstacle info from blind user
+  _updateObstacleInfo(data) {
+    if (data.obstacles && data.obstacles.length > 0) {
+      const names = data.obstacles.map(o => `${o.name} (${o.distance})`).join(', ');
+      console.log(`⚠️ Obstacles near Bố: ${names}`);
+      
+      const isDanger = data.obstacles.some(o => o.type === 'danger');
+      const toastType = isDanger ? 'danger' : 'info';
+      const prefix = isDanger ? '🚨 NGUY HIỂM:' : '⚠️ Chú ý:';
+      
+      App.showToast(`${prefix} Phát hiện vật cản gần Bố - ${names}`, toastType);
+    }
+  },
+
+  // Location updates from blind user
+  _updateLocationInfo(data) {
+    const addrEl = document.getElementById('current-address');
+    if (addrEl && data.address) {
+      addrEl.textContent = data.address;
+    }
+    
+    if (data.lat && data.lng && typeof TrackingScreen !== 'undefined') {
+       TrackingScreen.updatePosition({ lat: data.lat, lng: data.lng, address: data.address });
+    }
+
+    // Update speed info
+    const speedEl = document.getElementById('current-speed');
+    if (speedEl) {
+      speedEl.textContent = `🚶 ${data.speed || 0} km/h · Hướng: ${data.heading || 0}°`;
+    }
+    
+    console.log(`📍 Bố location: ${data.address}`);
+  },
+
+  // Camera feed from blind user
+  onCameraFeed(stream) {
+    console.log('📹 Camera feed received from Bố!');
+    const video = document.getElementById('remote-camera-feed');
+    const placeholder = document.getElementById('live-feed-placeholder');
+    const badge = document.querySelector('.live-feed-badge');
+    const timeEl = document.querySelector('.live-feed-time');
+
+    if (video) {
+      video.srcObject = stream;
+      video.classList.add('active');
+      video.play().catch(e => console.warn('Camera video play failed:', e));
+    }
+    if (placeholder) placeholder.classList.add('hidden');
+    if (badge) badge.classList.add('active');
+    if (timeEl) {
+      timeEl.classList.add('active');
+      this.feedSeconds = 0;
+      clearInterval(this.feedTimer);
+      this.feedTimer = setInterval(() => {
+        this.feedSeconds++;
+        const m = Math.floor(this.feedSeconds/60).toString().padStart(2,'0');
+        const s = (this.feedSeconds%60).toString().padStart(2,'0');
+        timeEl.textContent = m + ':' + s;
+      }, 1000);
+    }
+
+    App.showToast('📹 Đã kết nối camera trực tiếp của Bố', 'success');
+  },
+
+  requestCameraFeed() {
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({ type: 'request-camera' });
+    }
+    App.showToast('📡 Đang kết nối camera của Bố...', 'info');
+  },
+
+  // Video call to blind user
+  async startCall() {
+    const overlay = document.getElementById('family-call-overlay');
+    if (overlay) overlay.classList.add('active');
+
+    const statusEl = document.getElementById('family-call-status');
+    if (statusEl) statusEl.textContent = 'Đang kết nối...';
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const localVideo = document.getElementById('family-local-video');
+      if (localVideo) {
+        localVideo.srcObject = stream;
+        localVideo.play().catch(() => {});
+      }
+
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.startCall(stream);
+      }
+
+      if (statusEl) statusEl.textContent = 'Đang gọi Bố...';
+    } catch(e) {
+      console.error('Start call error:', e);
+      this.endCall();
+      App.showToast('Không thể truy cập camera/mic. Cấp quyền và thử lại.', 'danger');
+    }
+  },
+
+  endCall() {
+    const overlay = document.getElementById('family-call-overlay');
+    if (overlay) overlay.classList.remove('active');
+
+    if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.endCall();
+
+    const localVideo = document.getElementById('family-local-video');
+    if (localVideo?.srcObject) {
+      localVideo.srcObject.getTracks().forEach(t => t.stop());
+      localVideo.srcObject = null;
+    }
+
+    const remoteVideo = document.getElementById('family-remote-video');
+    if (remoteVideo) remoteVideo.srcObject = null;
+
+    if (typeof AudioManager !== 'undefined') AudioManager.playCallEnd();
+    App.showToast('📴 Cuộc gọi đã kết thúc', 'info');
+  },
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    const icon = document.getElementById('family-mute-icon');
+    if (icon) icon.textContent = this.isMuted ? '🔇' : '🎤';
+
+    if (BlindNavRTC?.localStream) {
+      BlindNavRTC.localStream.getAudioTracks().forEach(t => {
+        t.enabled = !this.isMuted;
+      });
+    }
+  },
+
+  toggleSpeaker() {
+    App.showToast('🔊 Loa ngoài đã bật', 'info');
+  },
+
+  onCallStateChange(state) {
+    const statusEl = document.getElementById('family-call-status');
+    console.log('📞 Family call state:', state);
+
+    switch(state) {
+      case 'calling':
+        if (statusEl) statusEl.textContent = 'Đang gọi...';
+        break;
+      case 'ringing':
+        if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
+        break;
+      case 'connected':
+        if (statusEl) statusEl.textContent = 'Đã kết nối';
+        if (typeof AudioManager !== 'undefined') AudioManager.playCallConnect();
+        this.isConnected = true;
+        break;
+      case 'ended':
+        if (statusEl) statusEl.textContent = 'Đã kết thúc';
+        this.isConnected = false;
+        setTimeout(() => {
+          const overlay = document.getElementById('family-call-overlay');
+          if (overlay) overlay.classList.remove('active');
+        }, 1500);
+        if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
+        break;
+    }
+  },
+
+  updateTimer(time) {
+    const el = document.getElementById('family-call-timer');
+    if (el) el.textContent = time;
+  },
+
+  onRemoteStream(stream) {
+    console.log('🎥 Remote stream received from Bố');
+    const video = document.getElementById('family-remote-video');
+    if (video) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+
+    let remoteAudio = document.getElementById('family-remote-audio');
+    if (!remoteAudio) {
+      remoteAudio = document.createElement('audio');
+      remoteAudio.id = 'family-remote-audio';
+      remoteAudio.autoplay = true;
+      document.body.appendChild(remoteAudio);
+    }
+    remoteAudio.srcObject = stream;
+  },
+
+  toggleExpandFeed() {
+    const container = document.getElementById('live-feed-container');
+    if (!container) return;
+    container.style.aspectRatio = container.style.aspectRatio === '4/3' ? '16/9' : '4/3';
+  },
+
+  showSendMessage() {
+    App.showModal('💬 Gửi tin nhắn cho Bố', `
+      <div style="padding: 0 20px 20px;">
+        <p style="color:var(--color-text-secondary);margin-bottom:16px;font-size:0.9375rem;">
+          Tin nhắn sẽ được đọc to bằng giọng AI tiếng Việt trên điện thoại của Bố
+        </p>
+        <textarea id="family-msg-input" placeholder="Ví dụ: Bố ơi, trời sắp mưa, bố về nhà sớm nhé!" 
+          style="width:100%;height:100px;border:2px solid var(--color-border);border-radius:12px;padding:12px;font-size:1rem;font-family:inherit;resize:none;background:var(--color-surface);color:var(--color-text-primary);"></textarea>
+        <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" 
+          onclick="FamilyCallManager.doSendMessage();">📤 Gửi đến Bố</button>
+      </div>
+    `);
+    setTimeout(() => {
+      const input = document.getElementById('family-msg-input');
+      if (input) input.focus();
+    }, 300);
+  },
+
+  doSendMessage() {
+    const input = document.getElementById('family-msg-input');
+    const text = input?.value?.trim();
+    if (!text) {
+      if (input) input.style.borderColor = 'var(--color-danger)';
+      return;
+    }
+
+    console.log('📤 Sending text message to Bố:', text);
+
+    // Send via PeerJS
+    if (typeof BlindNavRTC !== 'undefined') {
+      const sent = BlindNavRTC.send({
+        type: 'text-message',
+        sender: 'Con Lan',
+        text: text
+      });
+      if (sent) console.log('✅ Message sent via PeerJS');
+    }
+
+    // Also send via Firebase if available
+    if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+      FirebaseConfig.updateState('text_messages/' + Date.now(), {
+        sender: 'family',
+        text: text,
+        timestamp: Date.now()
+      });
+    }
+
+    App.closeModal();
+    App.showToast('✅ Đã gửi tin nhắn cho Bố — Sẽ được đọc to trên điện thoại', 'success');
+  }
+};
+
+// Initialize after app loads
+const _origAppInit = App.init.bind(App);
+App.init = function() {
+  _origAppInit();
+  FamilyCallManager.init();
+};
+</script>
+
+
+
             break;
 
           case 'obstacle-update':
@@ -1361,7 +1696,7 @@ App.init = function() {
 };
 </script>
 
-<!-- 3D Intro Animation Logic -->
+<!-- 3D Cinematic Intro Animation Logic -->
 <script>
   (function() {
     const introContainer = document.getElementById('tech-intro');
@@ -1369,52 +1704,104 @@ App.init = function() {
     const skipBtn = document.getElementById('skip-intro-btn');
     if (!introContainer || !canvasContainer || typeof THREE === 'undefined') return;
 
-    let scene, camera, renderer, particles;
+    let scene, camera, renderer, particles, gridHelper;
     let animationId;
     let isFading = false;
+    let time = 0;
 
     function init3D() {
       scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0a0a1a, 0.02);
+
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 50;
+      camera.position.set(0, 15, 60);
+      camera.lookAt(0, 0, 0);
 
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // optimize for high DPI
       canvasContainer.appendChild(renderer.domElement);
 
-      // Create Particle Sphere
+      // 1. Cinematic Grid (Tron style)
+      gridHelper = new THREE.GridHelper(200, 50, 0x00ffcc, 0x0033aa);
+      gridHelper.position.y = -20;
+      gridHelper.material.opacity = 0.4;
+      gridHelper.material.transparent = true;
+      scene.add(gridHelper);
+
+      // 2. High-Tech Particle Core
       const geometry = new THREE.BufferGeometry();
-      const count = 3000;
+      const count = 5000;
       const positions = new Float32Array(count * 3);
       const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
       
       const color1 = new THREE.Color(0x00ffcc);
       const color2 = new THREE.Color(0x0066ff);
+      const color3 = new THREE.Color(0xff00ff);
 
-      for(let i=0; i<count*3; i+=3) {
-        // Spherical distribution
-        const r = 25 + Math.random() * 5;
-        const theta = 2 * Math.PI * Math.random();
-        const phi = Math.acos(2 * Math.random() - 1);
+      for(let i=0; i<count; i++) {
+        const i3 = i * 3;
         
-        positions[i] = r * Math.sin(phi) * Math.cos(theta);
-        positions[i+1] = r * Math.sin(phi) * Math.sin(theta);
-        positions[i+2] = r * Math.cos(phi);
+        // Creating an abstract galaxy/AI core shape
+        const radius = Math.random() * 40;
+        const angle = Math.random() * Math.PI * 2;
+        const spiralY = (Math.random() - 0.5) * 40;
         
-        const mixedColor = color1.clone().lerp(color2, Math.random());
-        colors[i] = mixedColor.r;
-        colors[i+1] = mixedColor.g;
-        colors[i+2] = mixedColor.b;
+        positions[i3] = Math.cos(angle) * radius;
+        positions[i3+1] = spiralY;
+        positions[i3+2] = Math.sin(angle) * radius;
+        
+        const mixRatio = Math.random();
+        let mixedColor;
+        if(mixRatio < 0.5) mixedColor = color1.clone().lerp(color2, mixRatio * 2);
+        else mixedColor = color2.clone().lerp(color3, (mixRatio - 0.5) * 2);
+
+        colors[i3] = mixedColor.r;
+        colors[i3+1] = mixedColor.g;
+        colors[i3+2] = mixedColor.b;
+        
+        sizes[i] = Math.random() * 1.5;
       }
 
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-      const material = new THREE.PointsMaterial({
-        size: 0.3,
-        vertexColors: true,
+      // Custom Shader Material for glowing dots
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          time: { value: 0 }
+        },
+        vertexShader: `
+          attribute float size;
+          uniform float time;
+          varying vec3 vColor;
+          void main() {
+            vColor = color;
+            vec3 pos = position;
+            // Add subtle wave animation
+            pos.y += sin(pos.x * 0.1 + time) * 2.0;
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_PointSize = size * (300.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vColor;
+          void main() {
+            // Circular particle with soft edge
+            vec2 xy = gl_PointCoord.xy - vec2(0.5);
+            float ll = length(xy);
+            if(ll > 0.5) discard;
+            float alpha = (0.5 - ll) * 2.0;
+            gl_FragColor = vec4(vColor, alpha * 0.8);
+          }
+        `,
         transparent: true,
-        opacity: 0.8
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
       });
 
       particles = new THREE.Points(geometry, material);
@@ -1434,10 +1821,24 @@ App.init = function() {
     function animate() {
       if(isFading) return;
       animationId = requestAnimationFrame(animate);
+      
+      time += 0.01;
+      
       if(particles) {
-        particles.rotation.y += 0.002;
-        particles.rotation.x += 0.001;
+        particles.rotation.y = time * 0.2;
+        particles.rotation.x = Math.sin(time * 0.5) * 0.1;
+        particles.material.uniforms.time.value = time;
       }
+      
+      if(gridHelper) {
+        gridHelper.position.z = (time * 10) % 10; // Moving grid effect
+      }
+
+      // Cinematic camera movement
+      camera.position.x = Math.sin(time * 0.3) * 20;
+      camera.position.z = 60 - Math.cos(time * 0.3) * 10;
+      camera.lookAt(0, 0, 0);
+
       renderer.render(scene, camera);
     }
 
@@ -1448,14 +1849,17 @@ App.init = function() {
       setTimeout(() => {
         if(animationId) cancelAnimationFrame(animationId);
         introContainer.remove();
+        
+        // Dispatch event for other modules
+        document.dispatchEvent(new CustomEvent('introFinished'));
       }, 1000);
     }
 
     // Bind skip button
     if(skipBtn) skipBtn.addEventListener('click', removeIntro);
 
-    // Auto remove after 10 seconds
-    setTimeout(removeIntro, 10000);
+    // Auto remove after 8 seconds (slightly faster than before)
+    setTimeout(removeIntro, 8000);
 
     // Start 3D
     init3D();

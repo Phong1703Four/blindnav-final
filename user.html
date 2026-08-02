@@ -3,231 +3,214 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="description" content="BlindNav — Giao diện hỗ trợ người mù: Camera AI, chỉ đường bằng giọng nói, ghi âm tin nhắn, SOS khẩn cấp. Samsung Solve for Tomorrow 2026.">
   <meta name="theme-color" content="#0a0a0f">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="format-detection" content="telephone=no">
-  <title>BlindNav — Đôi mắt thông minh</title>
+  <title>BlindNav — Giao diện Người Mù</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-  <!-- Shared CSS Variables -->
   <link rel="stylesheet" href="css/variables.css">
-  <!-- User-specific CSS -->
   <link rel="stylesheet" href="css/user.css">
 </head>
 <body>
 
-<div id="user-app">
+<!-- Pairing Overlay -->
+<div id="pairing-overlay" class="pairing-overlay active">
+  <div class="pairing-card glass-panel">
+    <div class="pairing-icon"><i class="fa-solid fa-link"></i></div>
+    <h2>Kết nối Người Thân</h2>
+    <p>Đọc mã 6 số dưới đây cho người thân để kết nối hệ thống.</p>
+    <div class="pairing-code" id="pairing-code-display">------</div>
+    <button id="generate-code-btn" class="btn-primary" onclick="UserApp.generatePairingCode()">Tạo Mã</button>
+    <div class="pairing-status" id="pairing-status">Đang chờ tạo mã...</div>
+    <button id="start-app-btn" class="btn-success" style="display:none;" onclick="UserApp.startApp()">Bắt Đầu Trải Nghiệm</button>
+  </div>
+</div>
 
-  <!-- ═══════════════════════════════════════════
-       CAMERA — Full-screen background
-       ═══════════════════════════════════════════ -->
+<div id="user-app" style="display: none;">
+  <!-- CAMERA BACKGROUND -->
   <div class="camera-container" id="camera-container">
     <video id="camera-video" autoplay playsinline muted></video>
-    <canvas id="camera-canvas"></canvas>
-
-    <!-- Camera placeholder (shown when camera unavailable) -->
     <div class="camera-placeholder" id="camera-placeholder">
-      <div class="camera-placeholder-icon">📷</div>
-      <div class="camera-placeholder-text">Đang khởi động camera...<br>Vui lòng cấp quyền truy cập</div>
+      <i class="fa-solid fa-camera"></i>
+      <div>Đang khởi động camera...</div>
     </div>
-
-    <!-- Obstacle detection overlay -->
-    <div class="obstacle-overlay" id="obstacle-overlay"></div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       TOP STATUS BAR
-       ═══════════════════════════════════════════ -->
-  <div class="user-status-bar" id="user-status-bar">
-    <div class="status-left">
-      <div class="status-gps">
-        <div class="dot"></div>
-        <span>GPS</span>
+  <!-- TOP STATUS BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="glass-pill">
+        <div class="pill-icon blue"><i class="fa-solid fa-location-dot"></i></div>
+        <div class="pill-text">
+          <div class="pill-title">GPS</div>
+          <div class="pill-sub safe"><span class="dot-green"></span> Đã kết nối &nbsp; <span class="dim">Sai số ±3m</span></div>
+        </div>
       </div>
-      <div class="status-connection" id="status-connection">📡 Đã kết nối</div>
+      <div class="glass-pill">
+        <div class="pill-icon purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="pill-text">
+          <div class="pill-title">AI BlindNav</div>
+          <div class="pill-sub safe"><span class="dot-green"></span> Đang hoạt động</div>
+        </div>
+      </div>
     </div>
-    <div class="status-right">
-      <div class="status-battery" id="status-battery">🔋 85%</div>
-      <div class="status-time" id="status-time">--:--</div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════
-       NAVIGATION INFO OVERLAY
-       ═══════════════════════════════════════════ -->
-  <div class="nav-info-overlay" id="nav-info">
-    <div class="nav-direction-card">
-      <div class="nav-direction-text" id="nav-direction-text">Đi thẳng, hướng Bắc</div>
-      <div class="nav-location-text" id="nav-location-text">📍 Hàng Bông, Hoàn Kiếm, Hà Nội</div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════
-       ALERT BANNER (Obstacle warnings)
-       ═══════════════════════════════════════════ -->
-  <div class="alert-banner" id="alert-banner"></div>
-
-  <!-- ═══════════════════════════════════════════
-       BOTTOM CONTROLS
-       ═══════════════════════════════════════════ -->
-  <div class="user-bottom-controls">
     
-    <!-- Quick Actions -->
-    <div class="quick-action-row">
-      <button class="quick-btn" id="call-family-btn" aria-label="Gọi người thân">
-        <span class="quick-btn-icon">📞</span>
-        <span>Gọi điện</span>
-      </button>
-      <button class="quick-btn" id="messages-btn" aria-label="Xem tin nhắn">
-        <span class="quick-btn-icon">💬</span>
-        <span>Tin nhắn</span>
-      </button>
-      <button class="quick-btn" id="nav-toggle-btn" aria-label="Bật/tắt chỉ đường">
-        <span class="quick-btn-icon">🧭</span>
-        <span>Chỉ đường</span>
-      </button>
+    <div class="top-center">
+      <div class="glass-pill message-pill" id="top-message-pill">
+        <div class="msg-icon-bubble"><i class="fa-solid fa-comment-dots"></i></div>
+        <div class="msg-avatar">👩</div>
+        <div class="pill-text">
+          <div class="pill-title">Tin nhắn mới từ Con Lan</div>
+          <div class="pill-sub dim">Mẹ: "Con về chưa? Mẹ đang đợi con."</div>
+        </div>
+        <div class="msg-time">10:25</div>
+      </div>
     </div>
 
-    <!-- Main Action Buttons -->
-    <div class="main-action-row">
-      <!-- Navigation Button -->
-      <button class="nav-toggle-btn" id="location-btn" aria-label="Đọc vị trí hiện tại"
-        onclick="UserApp.speak('Bạn đang ở ' + document.getElementById('nav-location-text').textContent.replace('📍 ',''))">
-        📍
-      </button>
-
-      <!-- Record Button (center, large) -->
-      <button class="record-btn" id="record-btn" aria-label="Ghi âm tin nhắn">
-        🎤
-      </button>
-
-      <!-- SOS Button -->
-      <button class="sos-btn" id="sos-btn" aria-label="SOS khẩn cấp">
-        SOS
-      </button>
+    <div class="top-right">
+      <div class="glass-pill compact">
+        <i class="fa-solid fa-signal"></i> 4G
+      </div>
+      <div class="glass-pill compact battery">
+        <i class="fa-solid fa-battery-full"></i> 85%
+      </div>
     </div>
   </div>
 
-</div>
-
-<!-- ═══════════════════════════════════════════
-     RECORDING OVERLAY
-     ═══════════════════════════════════════════ -->
-<div class="recording-overlay" id="recording-overlay">
-  <div class="recording-visual">🎤</div>
-  <div class="recording-text">Đang ghi âm...</div>
-  <div class="recording-timer" id="recording-timer">00:00</div>
-  <div class="recording-hint">Nói tin nhắn của bạn.<br>Giữ nút ghi âm và thả ra khi xong.<br>Hoặc chạm đúp màn hình để ghi/dừng.</div>
-  <button class="recording-stop-btn" id="recording-stop-btn" aria-label="Dừng ghi âm"></button>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     SOS OVERLAY
-     ═══════════════════════════════════════════ -->
-<div class="sos-overlay" id="sos-overlay">
-  <div class="sos-overlay-icon">🚨</div>
-  <div class="sos-overlay-title">SOS Đã Kích Hoạt</div>
-  <div class="sos-overlay-status" id="sos-steps">
-    <div class="step" id="sos-step-1">⏳ Đang gửi vị trí GPS...</div>
-    <div class="step" id="sos-step-2">⏳ Chuẩn bị gọi cho người thân...</div>
-    <div class="step" id="sos-step-3">⏳ Chuẩn bị ghi âm môi trường...</div>
-  </div>
-  <button class="sos-cancel-btn" id="sos-cancel-btn">✕ Hủy SOS — Tôi ổn</button>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     CALL OVERLAY (outgoing/active call)
-     ═══════════════════════════════════════════ -->
-<div class="call-overlay" id="call-overlay">
-  <div class="call-avatar">👩</div>
-  <div class="call-name">Con Lan</div>
-  <div class="call-status-text" id="call-status-text">Đang gọi...</div>
-  <div class="call-timer" id="call-timer">00:00</div>
-  <div class="call-actions">
-    <div>
-      <button class="call-action-btn mute" aria-label="Tắt mic">🔇</button>
-      <div class="call-action-label">Tắt mic</div>
-    </div>
-    <div>
-      <button class="call-action-btn end" id="end-call-btn" aria-label="Kết thúc cuộc gọi">📴</button>
-      <div class="call-action-label">Kết thúc</div>
-    </div>
-    <div>
-      <button class="call-action-btn speaker" aria-label="Loa ngoài">🔊</button>
-      <div class="call-action-label">Loa ngoài</div>
+  <!-- CENTER ALERT -->
+  <div class="center-container">
+    <div class="center-alert danger" id="center-alert">
+      <div class="alert-header">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>NGUY HIỂM PHÍA TRƯỚC</span>
+      </div>
+      <div class="alert-object" id="alert-object">Cột điện</div>
+      <div class="alert-distance" id="alert-distance">Cách 1.5 m</div>
+      <div class="alert-action" id="alert-action">
+        <i class="fa-solid fa-arrow-turn-down fa-rotate-90"></i> Hãy tránh sang trái
+      </div>
+      <div class="alert-dots">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ═══════════════════════════════════════════
-     INCOMING CALL OVERLAY
-     ═══════════════════════════════════════════ -->
-<div class="incoming-call" id="incoming-call">
-  <div class="incoming-call-label">Cuộc gọi đến</div>
-  <div class="incoming-call-avatar">👩</div>
-  <div class="incoming-call-name">Con Lan</div>
-  <div class="incoming-call-actions">
-    <div>
-      <button class="call-action-btn end" id="reject-call-btn" aria-label="Từ chối">📴</button>
-      <div class="call-action-label">Từ chối</div>
+  <!-- BOTTOM PANELS -->
+  <div class="bottom-container">
+    <!-- Bottom Left: AI Assistant -->
+    <div class="bottom-left">
+      <div class="glass-panel ai-panel">
+        <div class="ai-header">
+          <i class="fa-solid fa-robot"></i> BlindNav AI
+        </div>
+        <div class="ai-waveform">
+          <div class="bar h-1"></div><div class="bar h-2"></div><div class="bar h-3"></div><div class="bar h-4"></div><div class="bar h-5"></div><div class="bar h-6"></div><div class="bar h-7"></div><div class="bar h-6"></div><div class="bar h-5"></div><div class="bar h-4"></div><div class="bar h-3"></div><div class="bar h-2"></div><div class="bar h-1"></div>
+        </div>
+        <div class="ai-text">Đang quan sát môi trường...</div>
+        <div class="ai-status safe">
+          <i class="fa-solid fa-circle-check"></i> Không phát hiện nguy hiểm
+        </div>
+      </div>
     </div>
-    <div>
-      <button class="call-action-btn accept" id="accept-call-btn" aria-label="Nghe máy">📞</button>
-      <div class="call-action-label">Nghe máy</div>
+
+    <!-- Bottom Center: Dock -->
+    <div class="bottom-center">
+      <div class="glass-dock">
+        <button class="dock-btn" onclick="UserApp.callFamily()">
+          <div class="btn-circle green"><i class="fa-solid fa-phone"></i></div>
+          <span>Gọi điện</span>
+        </button>
+        <button class="dock-btn" onclick="UserApp.speak('Chưa có tin nhắn mới')">
+          <div class="btn-circle blue"><i class="fa-solid fa-comment"></i></div>
+          <span>Tin nhắn</span>
+        </button>
+        <button class="dock-btn" onclick="UserApp.speak('Đang chỉ đường đi thẳng')">
+          <div class="btn-circle blue"><i class="fa-solid fa-location-arrow"></i></div>
+          <span>Chỉ đường</span>
+        </button>
+        <button class="dock-btn hold-to-speak" id="record-btn" onmousedown="UserApp.startRecording()" onmouseup="UserApp.stopRecording()" ontouchstart="UserApp.startRecording()" ontouchend="UserApp.stopRecording()">
+          <div class="btn-circle large-blue pulse"><i class="fa-solid fa-microphone"></i></div>
+          <span>Giữ để nói</span>
+        </button>
+        <button class="dock-btn emergency" onclick="UserApp.triggerSOS()">
+          <div class="btn-circle large-red pulse"><span>SOS</span></div>
+          <span>Cấp cứu khẩn cấp</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Right: Device Status -->
+    <div class="bottom-right">
+      <div class="glass-panel status-panel">
+        <div class="panel-header">Trạng thái thiết bị</div>
+        <div class="status-list">
+          <div class="status-item">
+            <div class="item-icon blue"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="item-text">
+              <div class="item-title">GPS</div>
+              <div class="item-sub safe">Đã kết nối</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="item-icon blue"><i class="fa-solid fa-camera"></i></div>
+            <div class="item-text">
+              <div class="item-title">Camera AI</div>
+              <div class="item-sub safe">Hoạt động tốt</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="item-icon green"><i class="fa-solid fa-battery-full"></i></div>
+            <div class="item-text">
+              <div class="item-title">Pin</div>
+              <div class="item-sub safe">85%</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="item-icon blue"><i class="fa-solid fa-signal"></i></div>
+            <div class="item-text">
+              <div class="item-title">Kết nối</div>
+              <div class="item-sub safe">4G mạnh</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="item-icon purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="item-text">
+              <div class="item-title">AI Assistant</div>
+              <div class="item-sub safe">Online</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ═══════════════════════════════════════════
-     MESSAGE TOAST (Floating notification)
-     ═══════════════════════════════════════════ -->
-<div class="msg-toast" id="msg-toast">
-  <div class="msg-toast-sender">💬 Con Lan</div>
-  <div class="msg-toast-text">Tin nhắn mới</div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     MESSAGES PANEL (Slide-up)
-     ═══════════════════════════════════════════ -->
-<div class="messages-panel" id="messages-panel">
-  <div class="messages-panel-handle"></div>
-  <div class="messages-panel-header">
-    <span>💬 Tin nhắn</span>
-    <button class="messages-panel-close" id="messages-panel-close" aria-label="Đóng">✕</button>
-  </div>
-  <div class="messages-list" id="messages-list">
-    <!-- Rendered by user-app.js -->
+  <!-- OVERLAYS FOR CALL & SOS -->
+  <div class="call-overlay" id="call-overlay">
+    <div class="call-avatar"><i class="fa-solid fa-user"></i></div>
+    <div class="call-name">Con Lan</div>
+    <div class="call-status" id="call-status-text">Đang gọi...</div>
+    <div class="call-timer" id="call-timer">00:00</div>
+    <button class="btn-end-call" onclick="UserApp.endCall()"><i class="fa-solid fa-phone-slash"></i> Kết thúc</button>
   </div>
 </div>
 
-<!-- Haptic flash effect -->
-<div class="haptic-flash" id="haptic-flash"></div>
-
-<!-- ═══════════════════════════════════════════
-     SCRIPTS
-     ═══════════════════════════════════════════ -->
-<!-- Firebase SDK -->
+<!-- Firebase SDK (compat mode for simplicity) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-<!-- Shared modules -->
-<script src="js/data.js"></script>
-<!-- Thư viện PeerJS cho kết nối qua Internet (P2P) -->
+<!-- Scripts -->
 <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/audio.js"></script>
-
-<!-- WebRTC module -->
 <script src="js/webrtc.js"></script>
-
-<!-- User App -->
+<script src="js/i18n.js"></script>
 <script src="js/user-app.js"></script>
 
 </body>

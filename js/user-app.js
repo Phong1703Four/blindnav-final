@@ -21,6 +21,42 @@ const UserApp = {
   currentRouteStep: 0,
   _holdRecordTimeout: null,
   _lastTapTime: 0,
+  pairingCode: '',
+
+  // ═══════════════════════════════════════════
+  // PAIRING
+  // ═══════════════════════════════════════════
+  async generatePairingCode() {
+    // Generate a random 6-digit string
+    this.pairingCode = Math.floor(100000 + Math.random() * 900000).toString();
+    document.getElementById('pairing-code-display').textContent = this.pairingCode;
+    document.getElementById('pairing-status').textContent = 'Mã đã được tạo. Vui lòng đọc mã này cho người thân.';
+    
+    try {
+      if (typeof FirebaseConfig !== 'undefined') {
+        FirebaseConfig.init(); // Ignore demo warning for now
+        await FirebaseConfig.pairDevice(this.pairingCode, 'user');
+      }
+      
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.initAsUser(this.pairingCode);
+      }
+      
+      document.getElementById('start-app-btn').style.display = 'block';
+      
+      setTimeout(() => {
+        this.speak(`Mã liên kết của bạn là: ${this.pairingCode.split('').join(' ')}`);
+      }, 1000);
+    } catch (err) {
+      document.getElementById('pairing-status').textContent = 'Lỗi kết nối máy chủ.';
+    }
+  },
+
+  startApp() {
+    document.getElementById('pairing-overlay').classList.remove('active');
+    document.getElementById('user-app').style.display = 'flex';
+    this.init();
+  },
 
   // ═══════════════════════════════════════════
   // INITIALIZATION
@@ -48,8 +84,7 @@ const UserApp = {
 
     // Initialize WebRTC + BroadcastChannel
     if (typeof BlindNavRTC !== 'undefined') {
-      BlindNavRTC.init('user');
-
+      // BlindNavRTC is already initialized with code in generatePairingCode
       BlindNavRTC.onCallStateChange = (state) => this.onCallStateChange(state);
       BlindNavRTC.onCallTimer = (time) => this.updateCallTimer(time);
       BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
@@ -362,14 +397,26 @@ const UserApp = {
       if (dirText) dirText.textContent = 'Đang di chuyển...';
       if (locText) locText.textContent = `📍 ${addressStr}`;
 
-      // Gửi vị trí thật cho người thân qua WebRTC
+      // Gửi vị trí cho người thân qua PeerJS (primary)
       if (typeof BlindNavRTC !== 'undefined') {
         BlindNavRTC.send({
           type: 'location-update',
           address: addressStr,
           lat: lat,
           lng: lng,
-          heading: heading
+          heading: heading,
+          speed: position.coords.speed || 0
+        });
+      }
+      // Gửi vị trí qua Firebase (backup)
+      if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+        FirebaseConfig.updateState('location', {
+          address: addressStr,
+          lat: lat,
+          lng: lng,
+          heading: heading,
+          speed: position.coords.speed || 0,
+          timestamp: Date.now()
         });
       }
     };
@@ -478,12 +525,12 @@ const UserApp = {
     this.messages.push(msg);
     this.renderMessages();
 
-    // Gửi thông báo cho người thân qua BroadcastChannel
-    if (typeof BlindNavRTC !== 'undefined') {
-      // Chuyển blob sang base64 để gửi qua channel
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
+    // Gửi tin nhắn thoại qua PeerJS (primary) + Firebase (backup)
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = () => {
+      // PeerJS channel
+      if (typeof BlindNavRTC !== 'undefined') {
         BlindNavRTC.send({
           type: 'voice-message',
           sender: 'Bố',
@@ -491,9 +538,14 @@ const UserApp = {
           duration: this.recordingSeconds,
           timestamp: msg.timestamp
         });
-        console.log('📤 Voice message sent to family');
-      };
-    }
+        console.log('📤 Voice message sent via PeerJS');
+      }
+      // Firebase channel
+      if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+        FirebaseConfig.sendVoiceMessage(reader.result, this.recordingSeconds);
+        console.log('📤 Voice message sent via Firebase');
+      }
+    };
 
     this.speak(`Đã gửi tin nhắn ${this.recordingSeconds} giây cho người thân.`);
   },
@@ -590,13 +642,18 @@ const UserApp = {
 
     this.speak('SOS đã được kích hoạt. Đang liên hệ người thân.');
 
-    // Gửi SOS cho người thân qua BroadcastChannel
+    // Gửi SOS qua PeerJS (primary)
     if (typeof BlindNavRTC !== 'undefined') {
       BlindNavRTC.send({
         type: 'sos-alert',
-        address: document.getElementById('nav-location-text')?.textContent?.replace('📍 ', '') || 'Hàng Bông, Hoàn Kiếm',
+        address: document.getElementById('nav-location-text')?.textContent?.replace('📍 ', '') || 'Không rõ vị trí',
         timestamp: Date.now()
       });
+    }
+    // Gửi SOS qua Firebase (backup)
+    if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+      FirebaseConfig.updateState('sos_state', 'active');
+      FirebaseConfig.updateState('sos_timestamp', Date.now());
     }
 
     // Step 1: GPS
@@ -650,9 +707,13 @@ const UserApp = {
 
     if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
 
-    // Thông báo người thân
+    // Hủy SOS qua PeerJS (primary)
     if (typeof BlindNavRTC !== 'undefined') {
       BlindNavRTC.send({ type: 'sos-cancel' });
+    }
+    // Hủy SOS qua Firebase (backup)
+    if (typeof FirebaseConfig !== 'undefined' && FirebaseConfig.db && FirebaseConfig.deviceId) {
+      FirebaseConfig.updateState('sos_state', 'idle');
     }
 
     this.speak('SOS đã được hủy. Bạn an toàn.');
@@ -1071,10 +1132,35 @@ const UserApp = {
     setInterval(update, 30000);
   },
 
-  _formatTime(s) {
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
-    return `${m}:${sec}`;
+  _formatTime(secs) {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  },
+
+  // ═══════════════════════════════════════════
+  // FIREBASE SYNC (Task 5)
+  // ═══════════════════════════════════════════
+  onFirebaseStateUpdate(data) {
+    if (!data) return;
+    
+    // Update family connection status
+    if (data.presence && data.presence.family) {
+      const isOnline = data.presence.family.status === 'online';
+      if (!this._wasFamilyOnline && isOnline) {
+        this.speak('Người thân đã kết nối với kính của bạn.');
+        if (typeof AudioManager !== 'undefined') AudioManager.playNotification('success');
+      } else if (this._wasFamilyOnline && !isOnline) {
+        this.speak('Người thân đã ngắt kết nối với kính của bạn.');
+        if (typeof AudioManager !== 'undefined') AudioManager.playNotification('error');
+      }
+      this._wasFamilyOnline = isOnline;
+    }
+
+    // Handle SOS state change from family (resolved)
+    if (data.sos_state === 'resolved' && this.sosActive) {
+      this.onSOSResolved();
+    }
   }
 };
 

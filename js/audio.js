@@ -407,6 +407,44 @@ const AudioManager = {
     }
   },
 
+  /**
+   * Play audio from Base64 data URL
+   */
+  playBase64Audio(base64Data) {
+    if (!base64Data) return;
+    try {
+      const audio = new Audio(base64Data);
+      audio.volume = 1.0;
+      audio.play().catch(e => {
+        console.warn('Base64 audio playback failed:', e);
+        // Fallback: try with AudioContext
+        this._playBase64WithContext(base64Data);
+      });
+    } catch(e) {
+      console.warn('playBase64Audio error:', e);
+    }
+  },
+
+  _playBase64WithContext(base64Data) {
+    try {
+      const ctx = this.getContext();
+      // Extract the base64 content after the comma
+      const base64 = base64Data.split(',')[1];
+      if (!base64) return;
+      const raw = atob(base64);
+      const arr = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      ctx.decodeAudioData(arr.buffer, (buffer) => {
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      });
+    } catch(e) {
+      console.warn('AudioContext fallback failed:', e);
+    }
+  },
+
   _stopAll() {
     this.currentOscillators.forEach(osc => {
       try { osc.stop(); } catch(e) {}

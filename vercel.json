@@ -1,4 +1,5 @@
 {
+  "name": "samsung-solve",
   "rewrites": [
     { "source": "/family", "destination": "/index.html" },
     { "source": "/user", "destination": "/user.html" }
