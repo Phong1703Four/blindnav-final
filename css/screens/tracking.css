@@ -4,7 +4,6 @@
 
 /* ── Grid Bố Cục ── */
 .dashboard-grid {
-  display: grid !important;
   grid-template-columns: 1fr 380px;
   gap: 20px;
   height: 100vh;
@@ -12,6 +11,10 @@
   box-sizing: border-box;
   background-color: var(--color-bg);
   overflow: hidden;
+  display: none;
+}
+.dashboard-grid.active {
+  display: grid !important;
 }
 
 /* Fix mobile */
