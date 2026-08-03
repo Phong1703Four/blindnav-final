@@ -56,6 +56,12 @@ const BlindNavRTC = {
     if (this.peer) {
       try { this.peer.destroy(); } catch(e) {}
     }
+    
+    // Clear any existing retry timeouts
+    if (this._retryInterval) {
+      clearTimeout(this._retryInterval);
+      this._retryInterval = null;
+    }
 
     this.peer = new Peer(this.myId, {
       debug: 1,
@@ -73,12 +79,15 @@ const BlindNavRTC = {
     this.peer.on('open', (id) => {
       console.log(`📡 PeerJS connected. My ID: ${id}`);
       this.connectToTarget();
-      // Retry every 5s
-      this._retryInterval = setInterval(() => {
+      let retryDelay = 2000;
+      const attemptReconnect = () => {
         if (!this.conn || !this.conn.open) {
           this.connectToTarget();
+          retryDelay = Math.min(retryDelay * 1.5, 15000); // Max 15s
+          this._retryInterval = setTimeout(attemptReconnect, retryDelay);
         }
-      }, 5000);
+      };
+      this._retryInterval = setTimeout(attemptReconnect, retryDelay);
     });
 
     this.peer.on('connection', (conn) => {

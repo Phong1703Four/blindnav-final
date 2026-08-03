@@ -515,5 +515,17 @@
   "settings.medSaved": "✅ Medical profile updated!",
   "settings.ageYears": "{age} years old",
   "settings.onLabel": "On",
-  "settings.offLabel": "Off"
+  "settings.offLabel": "Off",
+  "user": {
+    "sosStep1Active": "📍 Sending GPS location...",
+    "sosStep1Done": "✅ GPS location sent",
+    "sosStep2Active": "📞 Calling family...",
+    "sosStep2Done": "✅ Calling family",
+    "sosStep2Fail": "⚠️ Could not video call — SMS sent",
+    "sosStep3Done": "🔊 Background recording active",
+    "sosStep3Fail": "✅ Family notified",
+    "sosSpeaking": "Connecting call with family.",
+    "trackingMsg1": "Dad, I am tracking you on the app. Be careful! 💙",
+    "trackingMsg2": "Hang Bong street is under construction, take Phu Doan street."
+  }
 }

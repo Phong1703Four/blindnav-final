@@ -82,7 +82,20 @@ ul, ol {
 .screen.active {
   display: flex;
   flex-direction: column;
-  animation: fadeIn 0.3s ease;
+  animation: slideIn3D 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn3D {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) translateZ(-100px) translateY(30px) rotateX(5deg);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) translateZ(0) translateY(0) rotateX(0deg);
+    filter: blur(0);
+  }
 }
 
 .screen::-webkit-scrollbar {

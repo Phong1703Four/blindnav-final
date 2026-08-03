@@ -18,8 +18,17 @@ const App = {
     this.startGlassesSimulation();
   },
 
+  isConnecting: false,
+
   async connectPairingCode() {
-    const code = document.getElementById('family-pairing-input').value.trim();
+    if (this.isConnecting) return;
+    this.isConnecting = true;
+    
+    const inputEl = document.getElementById('family-pairing-input');
+    // Sanitize to only numeric characters
+    let code = inputEl.value.replace(/\\D/g, '').trim();
+    inputEl.value = code; // update UI with sanitized input
+
     if (code.length === 6 && !isNaN(code)) {
       document.getElementById('family-pairing-error').style.display = 'none';
       
@@ -44,15 +53,17 @@ const App = {
         }
         
         document.getElementById('family-pairing-overlay').style.display = 'none';
-        this.showToast(I18n.t('app.statusActive').replace('{name}', 'Bố'), 'success');
+        this.showToast(I18n.t('app.statusActive').replace('{name}', I18n.t('user.defaultBlindUser')), 'success');
       } catch (err) {
-        document.getElementById('family-pairing-error').innerText = err.message || 'Lỗi kết nối.';
+        document.getElementById('family-pairing-error').innerText = err.message || I18n.t('user.serverError');
         document.getElementById('family-pairing-error').style.display = 'block';
       }
     } else {
-      document.getElementById('family-pairing-error').innerText = 'Mã không hợp lệ. Vui lòng kiểm tra lại.';
+      document.getElementById('family-pairing-error').innerText = I18n.t('app.invalidCode', { fallback: 'Mã không hợp lệ. Vui lòng nhập đúng 6 số.' });
       document.getElementById('family-pairing-error').style.display = 'block';
     }
+    
+    setTimeout(() => { this.isConnecting = false; }, 1500);
   },
 
   // ── Tab Navigation ──
@@ -389,7 +400,7 @@ const App = {
     const isOnline = data.connection_status === 'online';
     const statusText = document.getElementById('header-status-text');
     const statusDot = document.getElementById('header-status-dot');
-    if (statusText) statusText.textContent = isOnline ? I18n.t('app.statusActive').replace('{name}', 'Bố') : I18n.t('app.statusLost').replace('{name}', 'Bố');
+    if (statusText) statusText.textContent = isOnline ? I18n.t('app.statusActive').replace('{name}', I18n.t('user.defaultBlindUser')) : I18n.t('app.statusLost').replace('{name}', I18n.t('user.defaultBlindUser'));
     if (statusDot) {
       statusDot.className = 'status-dot';
       if (isOnline) statusDot.classList.add('active');

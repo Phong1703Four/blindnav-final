@@ -37,8 +37,20 @@ const I18n = {
     return true;
   },
 
+  enTranslations: {}, // Fallback
+
   async loadTranslations(langCode) {
     try {
+      // Always load English as fallback if not already loaded
+      if (Object.keys(this.enTranslations).length === 0) {
+        try {
+          const enRes = await fetch(`locales/en.json`);
+          if (enRes.ok) this.enTranslations = await enRes.json();
+        } catch (e) {
+          console.warn('Failed to load English fallback');
+        }
+      }
+
       const response = await fetch(`locales/${langCode}.json`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       this.translations = await response.json();
@@ -46,7 +58,6 @@ const I18n = {
       localStorage.setItem(this.STORAGE_KEY, langCode);
     } catch (error) {
       console.error('Failed to load translations:', error);
-      // Fallback to english if something fails
       if (langCode !== 'en') {
         await this.loadTranslations('en');
       }
@@ -65,14 +76,15 @@ const I18n = {
   },
 
   t(key) {
-    return this.translations[key] || key;
+    return this.translations[key] || this.enTranslations[key] || key;
   },
 
   translatePage() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      if (this.translations[key]) {
-        el.innerHTML = this.translations[key];
+      const text = this.t(key);
+      if (text !== key) {
+        el.textContent = text;
       }
     });
 

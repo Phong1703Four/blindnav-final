@@ -80,11 +80,8 @@ const AudioManager = {
 
     // Also speak SOS message after beeps
     setTimeout(() => {
-      const lang = (typeof I18n !== 'undefined') ? I18n.currentLang : 'vi';
-      const msg = lang === 'vi' 
-        ? 'Cảnh báo! Bố vừa bấm SOS. Vui lòng kiểm tra ngay.' 
-        : 'Alert! Dad just pressed SOS. Please check immediately.';
-      this.speak(msg, lang);
+      const msg = (typeof I18n !== 'undefined') ? I18n.t('audio.sosAlertMsg') : 'Cảnh báo! Bố vừa bấm SOS. Vui lòng kiểm tra ngay.';
+      this.speak(msg);
     }, 2500);
   },
 

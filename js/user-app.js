@@ -71,6 +71,18 @@ const UserApp = {
     this.setupMessages();
     this.startClock();
 
+    // ══ Xử lý mất mạng / có mạng ══
+    window.addEventListener('offline', () => {
+      this.speak('Mất kết nối mạng. Vui lòng kiểm tra lại 3G hoặc Wi-Fi.');
+      if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.callState = 'idle';
+    });
+    window.addEventListener('online', () => {
+      this.speak('Đã có mạng trở lại. Đang khôi phục kết nối.');
+      if (typeof BlindNavRTC !== 'undefined' && this.pairingCode) {
+        BlindNavRTC.initAsUser(this.pairingCode);
+      }
+    });
+
     // Greet after a moment
     setTimeout(() => {
       this.speak('Xin chào. BlindNav đã sẵn sàng. Camera đang quét môi trường.');
@@ -115,6 +127,12 @@ const UserApp = {
         console.log('📹 Family requesting camera feed');
         this.reshareCameraFeed();
       };
+      
+      BlindNavRTC.onDataConnected = () => {
+        if (this.cameraActive && this.cameraStream) {
+          this.shareCameraToFamily();
+        }
+      };
     }
 
     // Firebase init (if configured)
@@ -155,11 +173,19 @@ const UserApp = {
       if (placeholder) placeholder.style.display = 'none';
       this.cameraActive = true;
 
-      // Share camera feed cho người thân sau 2s
-      setTimeout(() => this.shareCameraToFamily(), 2000);
+      if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC.isConnected()) {
+        this.shareCameraToFamily();
+      }
 
     } catch (err) {
       console.warn('📷 Camera error:', err);
+      if (err.name === 'NotAllowedError') {
+        this.speak('Vui lòng cấp quyền sử dụng camera.');
+      } else if (err.name === 'NotFoundError') {
+        this.speak('Không tìm thấy camera nào trên thiết bị.');
+      } else {
+        this.speak(I18n.t('user.cameraError'));
+      }
       if (placeholder) {
         placeholder.querySelector('.camera-placeholder-text').textContent =
           'Không thể mở camera. Vui lòng cấp quyền camera.';
@@ -779,8 +805,8 @@ const UserApp = {
     if (callOverlay) callOverlay.classList.add('active');
 
     // Answer WebRTC call
-    if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC._incomingOfferSdp) {
-      BlindNavRTC.answerCall(BlindNavRTC._incomingOfferSdp);
+    if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC.callObj) {
+      BlindNavRTC.answerCall();
     }
 
     this.speak('Cuộc gọi đã kết nối.');
@@ -823,8 +849,8 @@ const UserApp = {
       case 'ringing':
         if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
         // Nếu là user nhận cuộc gọi đến từ family
-        if (BlindNavRTC._incomingOfferSdp && !document.getElementById('call-overlay')?.classList.contains('active')) {
-          this.showIncomingCall({ callerName: 'Con Lan' });
+        if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC.callObj && !document.getElementById('call-overlay')?.classList.contains('active')) {
+          this.showIncomingCall({ callerName: I18n.t('user.family') });
         }
         break;
       case 'connected':
@@ -885,8 +911,16 @@ const UserApp = {
   // CONTROLS & EVENTS
   // ═══════════════════════════════════════════
   setupControls() {
+    let isThrottled = false;
+    const throttleAction = async (action) => {
+      if (isThrottled) return;
+      isThrottled = true;
+      try { await action(); } catch (e) { console.error(e); }
+      setTimeout(() => { isThrottled = false; }, 2000);
+    };
+
     const recordBtn = document.getElementById('record-btn');
-    if (recordBtn) recordBtn.addEventListener('click', () => this.toggleRecording());
+    if (recordBtn) recordBtn.addEventListener('click', () => throttleAction(() => this.toggleRecording()));
 
     // SOS: click on desktop, long-press on mobile
     const sosBtn = document.getElementById('sos-btn');
@@ -895,7 +929,9 @@ const UserApp = {
       const startSOS = (e) => {
         e.preventDefault();
         sosBtn.classList.add('active');
-        pressTimer = setTimeout(() => this.triggerSOS(), 1000);
+        pressTimer = setTimeout(() => {
+          if (!this.sosActive) throttleAction(() => this.triggerSOS());
+        }, 1000);
       };
       const cancelSOS = () => {
         clearTimeout(pressTimer);
@@ -915,7 +951,7 @@ const UserApp = {
     if (recordStopBtn) recordStopBtn.addEventListener('click', () => this.stopRecording());
 
     const callBtn = document.getElementById('call-family-btn');
-    if (callBtn) callBtn.addEventListener('click', () => this.callFamily());
+    if (callBtn) callBtn.addEventListener('click', () => throttleAction(() => this.callFamily()));
 
     const endCallBtn = document.getElementById('end-call-btn');
     if (endCallBtn) endCallBtn.addEventListener('click', () => this.endCall());
